@@ -40,22 +40,93 @@ export default function SummaryPage() {
     analyzeReport();
   }, [analyzeReport]);
 
-  /* =========================
-     FIX GRAPH DATA (🔥 IMPORTANT)
-  ========================= */
-  const chartData = history.map((h) => ({
-    date: h.upload_date,
-    revenue: h.revenue || 0,
-    profit: Math.max(h.profit || 0, -100000), // prevent huge spikes
-  }));
+  /* ================= KPI CALCULATIONS ================= */
+  const latest = history[history.length - 1] || {};
+  const prev = history[history.length - 2] || {};
 
-  const chartX = chartData.map((d) => d.date);
-  const chartRevenue = chartData.map((d) => d.revenue);
-  const chartProfit = chartData.map((d) => d.profit);
+  const calcChange = (curr, prevVal) => {
+    if (!curr || !prevVal) return 0;
+    return (((curr - prevVal) / prevVal) * 100).toFixed(1);
+  };
 
-  /* =========================
-     PDF DOWNLOAD
-  ========================= */
+  const revenueChange = calcChange(latest.revenue, prev.revenue);
+  const profitChange = calcChange(latest.profit, prev.profit);
+
+  const margin = latest.revenue
+    ? ((latest.profit / latest.revenue) * 100).toFixed(1)
+    : 0;
+
+  /* ================= CHART DATA ================= */
+  const chartX = history.map((h) => h.upload_date);
+  const chartRevenue = history.map((h) => h.revenue || 0);
+  const chartProfit = history.map((h) => h.profit || 0);
+
+  /* ================= FORECAST ================= */
+  const forecastPeriods = 3;
+  const lastRevenue = chartRevenue[chartRevenue.length - 1] || 0;
+  const prevRevenue = chartRevenue[chartRevenue.length - 2] || 0;
+  const trend = lastRevenue - prevRevenue;
+
+  const forecastX = [];
+  const forecastY = [];
+
+  for (let i = 1; i <= forecastPeriods; i++) {
+    forecastX.push(`F${i}`);
+    forecastY.push(lastRevenue + trend * i);
+  }
+
+  /* ================= AI NARRATIVES ================= */
+  const generateNarratives = () => {
+    if (history.length < 2) return [];
+
+    const narratives = [];
+
+    if (latest.revenue > prev.revenue) {
+      narratives.push({
+        type: "positive",
+        text: "Revenue increased compared to last period, indicating strong growth.",
+      });
+    } else {
+      narratives.push({
+        type: "negative",
+        text: "Revenue declined, suggesting reduced sales or demand.",
+      });
+    }
+
+    if (latest.profit < prev.profit) {
+      narratives.push({
+        type: "negative",
+        text: "Profit dropped likely due to rising expenses or reduced margins.",
+      });
+    } else {
+      narratives.push({
+        type: "positive",
+        text: "Profit improved, indicating better efficiency or cost control.",
+      });
+    }
+
+    const margin = latest.revenue
+      ? latest.profit / latest.revenue
+      : 0;
+
+    if (margin < 0.1) {
+      narratives.push({
+        type: "negative",
+        text: "Low profit margin indicates high operational costs.",
+      });
+    } else {
+      narratives.push({
+        type: "neutral",
+        text: "Profit margin is stable, showing balanced financial health.",
+      });
+    }
+
+    return narratives;
+  };
+
+  const narratives = generateNarratives();
+
+  /* ================= PDF ================= */
   const downloadPdf = async () => {
     const canvas = await html2canvas(reportRef.current, { scale: 2 });
     const imgData = canvas.toDataURL("image/png");
@@ -65,36 +136,56 @@ export default function SummaryPage() {
     const height = (canvas.height * width) / canvas.width;
 
     pdf.addImage(imgData, "PNG", 0, 0, width, height);
-    pdf.save("FinScope_Traceable_Report.pdf");
+    pdf.save("FinScope_Report.pdf");
   };
 
   return (
     <div className="summary-page">
-      
+
       {/* HEADER */}
       <div className="summary-header">
         <h2>📋 Auto Summary Report</h2>
-
-        {/* ✅ FIXED BUTTON */}
         <button className="download-btn" onClick={downloadPdf}>
           ⬇ Download PDF
         </button>
       </div>
 
       <div className="report-card" ref={reportRef}>
-        
-        {/* ================= EXEC SUMMARY ================= */}
+
+        {/* KPI STRIP */}
+        <div className="kpi-strip">
+          <div className="kpi-box">
+            <h4>Revenue</h4>
+            <p>{latest.revenue?.toLocaleString()}</p>
+            <span className={revenueChange >= 0 ? "up" : "down"}>
+              {revenueChange}% {revenueChange >= 0 ? "↑" : "↓"}
+            </span>
+          </div>
+
+          <div className="kpi-box">
+            <h4>Profit</h4>
+            <p>{latest.profit?.toLocaleString()}</p>
+            <span className={profitChange >= 0 ? "up" : "down"}>
+              {profitChange}% {profitChange >= 0 ? "↑" : "↓"}
+            </span>
+          </div>
+
+          <div className="kpi-box">
+            <h4>Profit Margin</h4>
+            <p>{margin}%</p>
+            <span className="neutral">Efficiency</span>
+          </div>
+        </div>
+
+        {/* SUMMARY */}
         <section>
           <h3>Executive Summary</h3>
           <p>{summary}</p>
         </section>
 
-        {/* ================= GRAPH ================= */}
+        {/* CHART */}
         <section>
-          <h3>📈 Revenue vs Profit Trend</h3>
-          <p className="chart-subtitle">
-            Blue line = Revenue, Green bars = Profit over time
-          </p>
+          <h3>📈 Revenue vs Profit Trend + Forecast</h3>
 
           <Plot
             data={[
@@ -102,95 +193,60 @@ export default function SummaryPage() {
                 x: chartX,
                 y: chartRevenue,
                 type: "scatter",
-                mode: "lines+markers",
+                mode: "lines",
                 name: "Revenue",
-                line: {
-                  color: "#4f46e5",
-                  width: 4,
-                  shape: "spline",
-                },
-                marker: {
-                  size: 6,
-                },
+                line: { color: "#6366f1", width: 3, shape: "spline" },
                 fill: "tozeroy",
-                fillcolor: "rgba(79,70,229,0.1)",
+                fillcolor: "rgba(99,102,241,0.15)",
               },
               {
                 x: chartX,
                 y: chartProfit,
-                type: "bar",
+                type: "scatter",
+                mode: "lines",
                 name: "Profit",
-                marker: {
-                  color: "#22c55e",
-                  opacity: 0.8,
+                line: { color: "#22c55e", width: 3, shape: "spline" },
+              },
+              {
+                x: [...chartX, ...forecastX],
+                y: [...chartRevenue, ...forecastY],
+                type: "scatter",
+                mode: "lines",
+                name: "Forecast",
+                line: {
+                  color: "#f59e0b",
+                  width: 3,
+                  dash: "dot",
                 },
               },
             ]}
             layout={{
-              paper_bgcolor: "#ffffff",
-              plot_bgcolor: "#ffffff",
-
-              margin: { t: 20, r: 20, l: 40, b: 40 },
-
-              font: { color: "#0f172a" },
-
-              xaxis: {
-                title: "Date",
-                showgrid: false,
-              },
-
-              yaxis: {
-                title: "Amount",
-                gridcolor: "#e5e7eb",
-              },
-
-              legend: {
-                orientation: "h",
-                y: 1.1,
-              },
-
+              paper_bgcolor: "#fff",
+              plot_bgcolor: "#fff",
               hovermode: "x unified",
+              margin: { t: 20 },
             }}
-
-            config={{
-              responsive: true,
-              displayModeBar: false,
-            }}
-
+            config={{ displayModeBar: false }}
             style={{ width: "100%", height: "350px" }}
           />
         </section>
 
-        {/* ================= AI INSIGHTS ================= */}
+        {/* AI NARRATIVES */}
         <section>
-          <h3>🤖 AI Financial Insights</h3>
-
-          {loading ? (
-            <p>Analyzing financial performance...</p>
-          ) : insights.length === 0 ? (
-            <p>No AI insights available.</p>
-          ) : (
-            <div className="insight-grid">
-              {insights.map((ins, i) => (
-                <div
-                  key={i}
-                  className={`insight-card ${ins.type?.toLowerCase() || ""}`}
-                >
-                  <h4>{ins.title}</h4>
-                  <p className="desc">{ins.description}</p>
-                  <p className="explain">{ins.explanation}</p>
-                  <span className="confidence">
-                    Confidence: {ins.confidence_score}%
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+          <h3>🧠 AI Narrative Insights</h3>
+          <div className="narrative-grid">
+            {narratives.map((n, i) => (
+              <div key={i} className={`narrative-card ${n.type}`}>
+                {n.text}
+              </div>
+            ))}
+          </div>
         </section>
 
-        {/* ================= BULLETS ================= */}
+
+        {/* BULLETS */}
         <section>
-          <h3>Key Insights (Summary)</h3>
+          <h3>Key Insights</h3>
           <ul>
             {bullets.map((b, i) => (
               <li key={i}>{b}</li>
@@ -198,41 +254,32 @@ export default function SummaryPage() {
           </ul>
         </section>
 
-        {/* ================= TRACE ================= */}
-        <section className="trace-section">
-          <h3>🔍 KPI Traceability & Explainability</h3>
-
-          {traceability.length === 0 ? (
-            <p>No traceability data available.</p>
-          ) : (
-            <table className="trace-table">
-              <thead>
-                <tr>
-                  <th>KPI</th>
-                  <th>Value</th>
-                  <th>Source</th>
-                  <th>Page</th>
-                  <th>Matched Text</th>
-                  <th>Confidence</th>
+        {/* TRACE */}
+        <section>
+          <h3>🔍 Traceability</h3>
+          <table className="trace-table">
+            <thead>
+              <tr>
+                <th>KPI</th>
+                <th>Value</th>
+                <th>Source</th>
+                <th>Confidence</th>
+              </tr>
+            </thead>
+            <tbody>
+              {traceability.map((t, i) => (
+                <tr key={i}>
+                  <td>{t.kpi_name}</td>
+                  <td>{t.value}</td>
+                  <td>{t.source_type}</td>
+                  <td>{Math.round(t.confidence * 100)}%</td>
                 </tr>
-              </thead>
-              <tbody>
-                {traceability.map((t, i) => (
-                  <tr key={i}>
-                    <td>{t.kpi_name}</td>
-                    <td>{t.value}</td>
-                    <td>{t.source_type}</td>
-                    <td>{t.page_number}</td>
-                    <td className="matched-text">{t.matched_text}</td>
-                    <td>{Math.round(t.confidence * 100)}%</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+              ))}
+            </tbody>
+          </table>
         </section>
 
-        {/* ================= TIPS ================= */}
+        {/* TIPS */}
         <section>
           <h3>Recommendations</h3>
           <ul>

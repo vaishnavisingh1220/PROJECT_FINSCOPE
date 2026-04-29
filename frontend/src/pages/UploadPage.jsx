@@ -4,14 +4,17 @@ import { API } from "../services/api";
 import "./UploadPage.css";
 import avatar from "../assets/ai_avatar.png";
 import { KpiContext } from "../context/KpiContext";
+import { useNavigate } from "react-router-dom";
 
 export default function UploadPage() {
   const [file, setFile] = useState(null);
   const [localKpis, setLocalKpis] = useState(null);
   const [loading, setLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [summary, setSummary] = useState("");
 
   const { setKpis, setTraces, setInsights } = useContext(KpiContext);
+  const navigate = useNavigate();
 
   const messages = [
     "Welcome 👋 Upload your financial report",
@@ -61,7 +64,7 @@ export default function UploadPage() {
   };
 
   /* =========================
-     UPLOAD + ANALYSIS LOGIC
+     MAIN UPLOAD FUNCTION
   ========================= */
   const handleUpload = async () => {
     if (!file) {
@@ -70,13 +73,13 @@ export default function UploadPage() {
     }
 
     setLoading(true);
-    setMessage("Analyzing your document... 🤖");
+    setMessage("Uploading & extracting KPIs... 📊");
 
     try {
       const formData = new FormData();
       formData.append("file", file);
 
-      // ✅ Step 1: Upload file
+      // ✅ STEP 1: Upload
       const uploadRes = await API.post("/files/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
         timeout: 0,
@@ -84,7 +87,7 @@ export default function UploadPage() {
 
       const filePath = uploadRes.data.file_path;
 
-      // ✅ Step 2: Extract KPIs
+      // ✅ STEP 2: KPI Extraction
       const extractRes = await API.post(
         "/files/extract_kpi",
         { file_path: filePath },
@@ -94,30 +97,49 @@ export default function UploadPage() {
       const extractedKpis = extractRes.data.kpis || {};
       const traceability = extractRes.data.traceability || [];
 
-      // ✅ Step 3: AI Insights (🔥 NEW)
+      // ✅ UPDATE UI IMMEDIATELY (🔥 KEY FIX)
+      setKpis(extractedKpis);
+      setTraces(traceability);
+      setLocalKpis(extractedKpis);
+
+      setLoading(false); // ✅ allow UI to render KPIs
+      setMessage("KPIs ready ✅ Generating AI insights...");
+
+      // ✅ STEP 3: INSIGHTS (optional existing API)
       const filename = filePath.split("/").pop();
 
-      const analysisRes = await API.post("/api/analyze", {
+      const insightsRes = await API.post("/api/analyze", {
         filename: filename,
       });
 
-      const insights = analysisRes.data.insights || [];
-
-      console.log("AI Insights:", insights);
-
-      // ✅ Store globally
-      setKpis(extractedKpis);
-      setTraces(traceability);
+      const insights = insightsRes.data.insights || [];
       setInsights(insights);
 
-      // ✅ Local preview
-      setLocalKpis(extractedKpis);
+      // ✅ STEP 4: NLP SUMMARY (BACKGROUND - NON BLOCKING)
+      setTimeout(async () => {
+        try {
+          const analyzeForm = new FormData();
+          analyzeForm.append("file", file);
 
-      setMessage("Analysis complete ✅ KPIs + AI insights ready!");
+          const analysisRes = await API.post(
+            "/analyze-report",
+            analyzeForm
+          );
+
+          const summaryText = analysisRes.data?.data?.summary || "";
+
+          setSummary(summaryText);
+
+          setMessage("Analysis complete ✅");
+
+        } catch (err) {
+          console.error("NLP error:", err);
+        }
+      }, 0);
+
     } catch (err) {
       console.error("Upload error:", err);
       setMessage("Something went wrong. Please try again.");
-    } finally {
       setLoading(false);
     }
   };
@@ -155,20 +177,15 @@ export default function UploadPage() {
             className="file-input"
           />
 
-          {/* FILE PREVIEW */}
           {file && (
             <div className="file-preview">
               <span>📄 {file.name}</span>
-              <button
-                className="remove-file"
-                onClick={() => setFile(null)}
-              >
+              <button className="remove-file" onClick={() => setFile(null)}>
                 ✖
               </button>
             </div>
           )}
 
-          {/* BUTTON */}
           <button
             onClick={handleUpload}
             className="upload-btn"
@@ -179,7 +196,7 @@ export default function UploadPage() {
         </div>
 
         {/* ================= KPI PREVIEW ================= */}
-        {localKpis && (
+        {localKpis && Object.keys(localKpis).length > 0 && (
           <motion.div
             className="kpi-results"
             initial={{ opacity: 0 }}
@@ -188,7 +205,9 @@ export default function UploadPage() {
             <h3>📊 Extracted KPIs</h3>
 
             <div className="kpi-grid">
-              {Object.entries(localKpis).map(([key, value]) => (
+            { Object.entries(localKpis)
+  .filter(([_, value]) => value !== null && value !== 0)
+  .map(([key, value]) => (
                 <div key={key} className="kpi-card">
                   <h4>{key.toUpperCase()}</h4>
                   <p>{value !== null ? value.toLocaleString() : "—"}</p>
@@ -196,9 +215,12 @@ export default function UploadPage() {
               ))}
             </div>
 
+            {/* ✅ FIXED NAVIGATION */}
             <button
               className="goto-dashboard-btn"
-              onClick={() => (window.location.href = "/dashboard")}
+              onClick={() =>
+                navigate("/dashboard", { state: { summary } })
+              }
             >
               View Dashboard →
             </button>

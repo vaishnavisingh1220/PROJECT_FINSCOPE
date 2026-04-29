@@ -1,4 +1,3 @@
-// SAME IMPORTS (unchanged)
 import { useEffect, useState, useContext } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Plot from "react-plotly.js";
@@ -12,11 +11,28 @@ export default function Dashboard() {
 
   const { kpis, traces } = useContext(KpiContext) || {};
 
+  /* =========================
+     SAFE VALUE CHECK
+  ========================= */
+  const isValid = (value) => {
+    return (
+      value !== null &&
+      value !== undefined &&
+      value !== "" &&
+      value !== 0 &&
+      value !== "—" &&
+      !isNaN(Number(value))
+    );
+  };
+
+  /* =========================
+     FETCH HISTORY
+  ========================= */
   useEffect(() => {
     async function fetchHistory() {
       try {
         const res = await API.get("/files/history/1");
-        setRecords(res.data.history || []);
+        setRecords(Array.isArray(res.data.history) ? res.data.history : []);
       } catch (err) {
         console.error("Error fetching history:", err);
         setRecords([]);
@@ -28,22 +44,15 @@ export default function Dashboard() {
   const latestRecord =
     records.length > 0 ? records[records.length - 1] : {};
 
-  const isNumber = (v) =>
-    v !== null && v !== undefined && !isNaN(Number(v));
-
   const formatValue = (v) => {
-    if (!isNumber(v)) return "—";
+    if (!isValid(v)) return null;
     return Number(v).toLocaleString();
   };
 
-  const formatRatio = (v, isPercent = false) => {
-    if (!isNumber(v)) return "—";
-    return isPercent ? (v * 100).toFixed(2) + "%" : Number(v).toFixed(2);
-  };
-
   const getLatestValue = (key) => {
-    if (kpis && isNumber(kpis[key])) return kpis[key];
-    if (latestRecord && isNumber(latestRecord[key])) return latestRecord[key];
+    if (kpis && isValid(kpis[key])) return kpis[key];
+    if (latestRecord && isValid(latestRecord[key]))
+      return latestRecord[key];
     return null;
   };
 
@@ -52,6 +61,9 @@ export default function Dashboard() {
     return traces.filter((t) => t.kpi_name === kpiName);
   };
 
+  /* =========================
+     KPI LISTS
+  ========================= */
   const basicKPIs = ["revenue", "profit", "eps", "cash_flow"];
   const advancedKPIs = [
     "ebitda",
@@ -63,26 +75,26 @@ export default function Dashboard() {
 
   const ratioGroups = {
     profitability: [
-      { key: "gross_margin", label: "Gross Margin", isPercent: true },
-      { key: "operating_margin", label: "Operating Margin", isPercent: true },
-      { key: "ebitda_margin", label: "EBITDA Margin", isPercent: true },
-      { key: "net_profit_margin", label: "Net Profit Margin", isPercent: true },
-      { key: "roa", label: "ROA", isPercent: true },
-      { key: "roe", label: "ROE", isPercent: true },
+      "gross_margin",
+      "operating_margin",
+      "ebitda_margin",
+      "net_profit_margin",
+      "roa",
+      "roe",
     ],
-    liquidity: [
-      { key: "current_ratio", label: "Current Ratio" },
-      { key: "quick_ratio", label: "Quick Ratio" },
-    ],
-    leverage: [{ key: "debt_to_equity", label: "Debt to Equity" }],
+    liquidity: ["current_ratio", "quick_ratio"],
+    leverage: ["debt_to_equity"],
   };
 
+  /* =========================
+     CHART DATA
+  ========================= */
   const chartX = records.map((r) => r.upload_date || "");
   const chartRevenue = records.map((r) =>
-    isNumber(r.revenue) ? r.revenue : 0
+    isValid(r.revenue) ? r.revenue : 0
   );
   const chartProfit = records.map((r) =>
-    isNumber(r.profit) ? r.profit : 0
+    isValid(r.profit) ? r.profit : 0
   );
 
   return (
@@ -95,65 +107,81 @@ export default function Dashboard() {
         📈 Financial KPI Dashboard
       </motion.h2>
 
+      {/* ================= BASIC KPIs ================= */}
       <h3 className="section-title">Basic KPIs</h3>
       <div className="dashboard-kpi-grid">
-        {basicKPIs.map((k) => (
-          <motion.div
-            key={k}
-            className="dashboard-kpi-card clickable"
-            whileHover={{ scale: 1.05 }}
-            onClick={() => setSelectedKpi(k)}
-          >
-            <h4>{k.toUpperCase()}</h4>
-            <p>{formatValue(getLatestValue(k))}</p>
-            <small className="trace-hint">Click for source</small>
-          </motion.div>
-        ))}
+        {basicKPIs
+          .filter((k) => isValid(getLatestValue(k)))
+          .map((k) => (
+            <motion.div
+              key={k}
+              className="dashboard-kpi-card clickable"
+              whileHover={{ scale: 1.05 }}
+              onClick={() => setSelectedKpi(k)}
+            >
+              <h4>{k.toUpperCase()}</h4>
+              <p>{formatValue(getLatestValue(k))}</p>
+              <small className="trace-hint"></small>
+            </motion.div>
+          ))}
       </div>
 
+      {/* ================= ADVANCED KPIs ================= */}
       <h3 className="section-title">Advanced KPIs</h3>
       <div className="dashboard-kpi-grid">
-        {advancedKPIs.map((k) => (
-          <motion.div
-            key={k}
-            className="dashboard-kpi-card clickable"
-            whileHover={{ scale: 1.05 }}
-            onClick={() => setSelectedKpi(k)}
-          >
-            <h4>{k.toUpperCase()}</h4>
-            <p>{formatValue(getLatestValue(k))}</p>
-            <small className="trace-hint">Click for source</small>
-          </motion.div>
-        ))}
+        {advancedKPIs
+          .filter((k) => isValid(getLatestValue(k)))
+          .map((k) => (
+            <motion.div
+              key={k}
+              className="dashboard-kpi-card clickable"
+              whileHover={{ scale: 1.05 }}
+              onClick={() => setSelectedKpi(k)}
+            >
+              <h4>{k.toUpperCase()}</h4>
+              <p>{formatValue(getLatestValue(k))}</p>
+              <small className="trace-hint"></small>
+            </motion.div>
+          ))}
       </div>
 
+      {/* ================= RATIOS ================= */}
       <h3 className="section-title">Financial Ratios</h3>
 
-      {Object.entries(ratioGroups).map(([group, items]) => (
-        <div key={group}>
-          <h4 className="ratio-group-title">{group.toUpperCase()}</h4>
-          <div className="dashboard-kpi-grid">
-            {items.map((item) => (
-              <motion.div
-  key={item.key}
-  className="dashboard-kpi-card card clickable"
-  whileHover={{ scale: 1.05 }}
-  onClick={() => setSelectedKpi(item.key)}
->
-  <div className="kpi-top">
-    <span className="kpi-title">{item.key.toUpperCase()}</span>
-    <span className="kpi-icon">📊</span>
-  </div>
+      {Object.entries(ratioGroups).map(([group, items]) => {
+        const validItems = items.filter((k) =>
+          isValid(getLatestValue(k))
+        );
 
-  <p className="kpi-value">{formatValue(getLatestValue(item.key))}</p>
+        if (validItems.length === 0) return null;
 
-  <small className="trace-hint">Click for details →</small>
-</motion.div>
-            ))}
+        return (
+          <div key={group}>
+            <h4 className="ratio-group-title">
+              {group.toUpperCase()}
+            </h4>
+
+            <div className="dashboard-kpi-grid">
+              {validItems.map((k) => (
+                <motion.div
+                  key={k}
+                  className="dashboard-kpi-card clickable"
+                  whileHover={{ scale: 1.05 }}
+                  onClick={() => setSelectedKpi(k)}
+                >
+                  <h4>{k.toUpperCase()}</h4>
+                  <p>{formatValue(getLatestValue(k))}</p>
+                  <small className="trace-hint">
+                    
+                  </small>
+                </motion.div>
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
+      {/* ================= MODERN CHART ================= */}
       <h3 className="section-title">Revenue & Profit Trend</h3>
 
       {records.length > 0 ? (
@@ -163,31 +191,63 @@ export default function Dashboard() {
               x: chartX,
               y: chartRevenue,
               type: "scatter",
-              mode: "lines+markers",
+              mode: "lines",
               name: "Revenue",
-              line: { color: "#2563EB", width: 3 }, // blue
+              line: {
+                color: "#6366f1",
+                width: 3,
+                shape: "spline", // smooth curve 🔥
+              },
+              fill: "tozeroy",
+              fillcolor: "rgba(99,102,241,0.15)", // gradient feel
             },
             {
               x: chartX,
               y: chartProfit,
-              type: "bar",
+              type: "scatter",
+              mode: "lines",
               name: "Profit",
-              marker: { color: "#1E3A8A" }, // dark blue
+              line: {
+                color: "#22c55e",
+                width: 3,
+                shape: "spline",
+              },
             },
           ]}
           layout={{
             paper_bgcolor: "#ffffff",
             plot_bgcolor: "#ffffff",
-            font: { color: "#0f172a" },
-            xaxis: { title: "Upload Date" },
-            yaxis: { title: "Amount" },
+            margin: { l: 40, r: 20, t: 20, b: 40 },
+
+            xaxis: {
+              showgrid: false,
+              tickfont: { color: "#6b7280" },
+            },
+
+            yaxis: {
+              gridcolor: "#f1f5f9",
+              tickfont: { color: "#6b7280" },
+            },
+
+            legend: {
+              orientation: "h",
+              y: 1.1,
+            },
+
+            hovermode: "x unified", // 🔥 better tooltip
           }}
-          style={{ width: "100%", height: "420px" }}
+          config={{ displayModeBar: false }}
+          style={{
+            width: "100%",
+            height: "420px",
+            borderRadius: "16px",
+          }}
         />
       ) : (
         <p className="muted-text">No data available for charts.</p>
       )}
 
+      {/* ================= TRACE MODAL ================= */}
       <AnimatePresence>
         {selectedKpi && (
           <motion.div
@@ -199,32 +259,30 @@ export default function Dashboard() {
           >
             <motion.div
               className="trace-modal"
-              initial={{ y: 40, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 40, opacity: 0 }}
+              initial={{ y: 40 }}
+              animate={{ y: 0 }}
+              exit={{ y: 40 }}
               onClick={(e) => e.stopPropagation()}
             >
               <h3>🔍 Traceability: {selectedKpi.toUpperCase()}</h3>
 
               {getTraceForKpi(selectedKpi).length === 0 ? (
-                <p className="muted-text">
-                  No source information available for this KPI.
-                </p>
+                <p>No source info available.</p>
               ) : (
-                getTraceForKpi(selectedKpi).map((t, idx) => (
-                  <div key={idx} className="trace-card">
+                getTraceForKpi(selectedKpi).map((t, i) => (
+                  <div key={i} className="trace-card">
                     <p><strong>Source:</strong> {t.source_type}</p>
                     <p><strong>Page:</strong> {t.page_number}</p>
-                    <p><strong>Confidence:</strong> {(t.confidence * 100).toFixed(1)}%</p>
-                    <p className="trace-text">"{t.matched_text}"</p>
+                    <p>
+                      <strong>Confidence:</strong>{" "}
+                      {(t.confidence * 100).toFixed(1)}%
+                    </p>
+                    <p>"{t.matched_text}"</p>
                   </div>
                 ))
               )}
 
-              <button
-                className="close-btn"
-                onClick={() => setSelectedKpi(null)}
-              >
+              <button onClick={() => setSelectedKpi(null)}>
                 Close
               </button>
             </motion.div>
