@@ -1,0 +1,229 @@
+/* =========================
+   PAGE
+========================= */
+.upload-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f8fafc;
+  color: #0f172a;
+  padding: 20px;
+}
+
+/* =========================
+   CONTAINER
+========================= */
+.upload-container {
+  background: #ffffff;
+  padding: 40px;
+  border-radius: 18px;
+  width: 500px;
+  max-width: 95%;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  transition: 0.3s;
+}
+
+/* =========================
+   AVATAR
+========================= */
+.ai-avatar {
+  width: 80px;
+  margin-bottom: 10px;
+}
+
+/* =========================
+   MESSAGE BUBBLE
+========================= */
+.ai-bubble {
+  background: #e0ecff;
+  color: #1e3a8a !important;
+  padding: 14px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  font-weight: 500;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* =========================
+   UPLOAD BOX
+========================= */
+.upload-box {
+  border: 2px dashed #2563eb;
+  padding: 25px;
+  border-radius: 14px;
+  transition: 0.3s;
+  background: #f8fbff;
+  cursor: pointer;
+}
+
+/* HOVER EFFECT */
+.upload-box:hover {
+  border-color: #1e3a8a;
+  background: #eef4ff;
+  transform: scale(1.02);
+}
+
+/* DRAG ACTIVE */
+.drag-active {
+  background: #e0ecff !important;
+  border-color: #1e3a8a !important;
+}
+
+/* =========================
+   TEXT
+========================= */
+.upload-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.upload-sub {
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 10px;
+}
+
+/* =========================
+   FILE INPUT
+========================= */
+.file-input {
+  margin: 10px 0;
+}
+
+/* =========================
+   FILE PREVIEW
+========================= */
+.file-preview {
+  margin-top: 10px;
+  background: #e2e8f0;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.remove-file {
+  background: transparent;
+  border: none;
+  color: #ef4444;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* =========================
+   BUTTON
+========================= */
+.upload-btn {
+  margin-top: 15px;
+  background: #1e3a8a;
+  color: white;
+  padding: 12px 18px;
+  border-radius: 12px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.upload-btn:hover {
+  background: #2563eb;
+  transform: translateY(-2px);
+}
+
+.upload-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* =========================
+   KPI SECTION
+========================= */
+.kpi-results {
+  margin-top: 25px;
+}
+
+.kpi-results h3 {
+  color: #1e3a8a;
+  margin-bottom: 10px;
+}
+
+/* KPI GRID */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+/* KPI CARD */
+.kpi-card {
+  background: #f1f5f9;
+  padding: 12px;
+  border-radius: 10px;
+  transition: 0.3s;
+}
+
+.kpi-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 15px rgba(37, 99, 235, 0.15);
+}
+
+.kpi-card h4 {
+  font-size: 13px;
+  color: #1e3a8a;
+}
+
+.kpi-card p {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* =========================
+   NAV BUTTON
+========================= */
+.goto-dashboard-btn {
+  margin-top: 15px;
+  padding: 10px 14px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.goto-dashboard-btn:hover {
+  background: #1e3a8a;
+  transform: translateY(-2px);
+}
+
+/* =========================
+   GLOBAL TEXT FIX
+========================= */
+.upload-page p,
+.upload-page span,
+.upload-page label {
+  color: #0f172a !important;
+}
+
+input::placeholder {
+  color: #64748b;
+}
+
+/* =========================
+   ANIMATION
+========================= */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

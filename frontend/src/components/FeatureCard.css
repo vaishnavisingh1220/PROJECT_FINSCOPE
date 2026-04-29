@@ -1,0 +1,110 @@
+.feature-card {
+  position: relative;
+  background: rgba(15, 23, 42, 0.7);
+  border-radius: 20px;
+  width: 300px;
+  padding: 40px 25px;
+  text-align: center;
+  color: #e2e8f0;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  box-shadow: inset 0 0 10px rgba(59, 130, 246, 0.2),
+              0 0 20px rgba(37, 99, 235, 0.15);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+  transition: all 0.4s ease;
+}
+
+/* glowing border gradient layer */
+.feature-card::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 22px;
+  background: linear-gradient(
+    135deg,
+    rgba(37, 99, 235, 0.7),
+    rgba(147, 197, 253, 0.3),
+    rgba(255, 255, 255, 0.1)
+  );
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+/* white-blue gradient overlay on hover */
+.feature-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  background: radial-gradient(circle at top left, rgba(37,99,235,0.15), transparent 70%);
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.feature-card:hover::before {
+  opacity: 1;
+  box-shadow: 0 0 30px rgba(37, 99, 235, 0.6);
+}
+
+.feature-card:hover::after {
+  opacity: 1;
+}
+
+/* top glow line */
+.feature-card::marker {
+  display: none;
+}
+
+.feature-icon {
+  font-size: 42px;
+  color: #3b82f6;
+  text-shadow: 0 0 15px rgba(59, 130, 246, 0.7);
+  margin-bottom: 18px;
+  z-index: 2;
+  position: relative;
+}
+
+.feature-card h3 {
+  font-weight: 700;
+  color: #f8fafc;
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+  text-shadow: 0 0 10px rgba(59, 130, 246, 0.6);
+  position: relative;
+  z-index: 2;
+}
+
+.feature-card p {
+  color: #cbd5e1;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  z-index: 2;
+  position: relative;
+}
+
+/* glowing animated edge corners */
+.feature-card::before,
+.feature-card::after {
+  animation: pulseGlow 4s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    filter: blur(2px);
+    opacity: 0.8;
+  }
+  50% {
+    filter: blur(8px);
+    opacity: 1;
+  }
+}
+
+/* subtle hover lift */
+.feature-card:hover {
+  transform: translateY(-10px);
+  box-shadow:
+    0 10px 30px rgba(37, 99, 235, 0.35),
+    inset 0 0 20px rgba(37, 99, 235, 0.15);
+}

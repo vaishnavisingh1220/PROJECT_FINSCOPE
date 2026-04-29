@@ -1,0 +1,130 @@
+.hero {
+  height: 100vh;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: linear-gradient(135deg, #fef3c7, #f0f9ff);
+  padding: 100px 50px;
+}
+
+.hero-content {
+  max-width: 500px;
+}
+
+.hero h1 {
+  font-size: 3rem;
+  line-height: 1.2;
+}
+
+.hero h1 span {
+  color: #2563eb;
+}
+
+.hero p {
+  margin: 20px 0;
+  color: #444;
+}
+
+.cta-buttons a {
+  margin-right: 15px;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: #2563eb;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+}
+
+.btn-outline {
+  border: 2px solid #2563eb;
+  color: #2563eb;
+  padding: 10px 20px;
+  border-radius: 8px;
+}
+
+.hero-img {
+  width: 400px;
+}
+
+.features {
+  padding: 80px 50px;
+  text-align: center;
+  background: #f9fafb;
+}
+
+.feature-grid {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 40px;
+}
+
+.about {
+  padding: 80px 60px;
+  background: white;
+  text-align: center;
+}
+
+footer {
+  background: #0f172a;
+  color: #fff;
+  text-align: center;
+  padding: 20px 0;
+}
+
+.page-transition {
+  position: relative;
+  z-index: 2;
+}
+
+.page-transition::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at center,
+    rgba(37, 99, 235, 0.05),
+    rgba(15, 23, 42, 0.95)
+  );
+  opacity: 0;
+  z-index: -1;
+  animation: fadeGlow 0.6s ease;
+}
+
+/* ============================= */
+/* APP LAYOUT WITH SIDEBAR */
+/* ============================= */
+
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #0b1220, #020617);
+}
+
+/* Sidebar fixed width */
+.sidebar-container {
+  width: 240px;
+  min-width: 240px;
+}
+
+/* Main content area */
+.app-content {
+  flex: 1;
+  padding: 32px 40px;
+  overflow-x: hidden;
+}
+
+
+@keyframes fadeGlow {
+  0% {
+    opacity: 0.8;
+    filter: blur(60px);
+  }
+  100% {
+    opacity: 0;
+    filter: blur(0);
+  }
+}
