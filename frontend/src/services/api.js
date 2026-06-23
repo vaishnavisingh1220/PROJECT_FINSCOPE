@@ -1,20 +1,24 @@
 // src/services/api.js
+
 import axios from "axios";
 
+// ==========================
+// BASE URL
+// ==========================
 const API_BASE = "http://127.0.0.1:5000";
 
 // ==========================
-// AXIOS INSTANCE
+// SINGLE AXIOS INSTANCE
 // ==========================
-const instance = axios.create({
+export const API = axios.create({
   baseURL: API_BASE,
-  timeout: 20000, // slightly increased
+  timeout: 20000,
 });
 
 // ==========================
-// REQUEST INTERCEPTOR (JWT)
+// REQUEST INTERCEPTOR
 // ==========================
-instance.interceptors.request.use(
+API.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
 
@@ -29,19 +33,17 @@ instance.interceptors.request.use(
 );
 
 // ==========================
-// RESPONSE INTERCEPTOR (AUTO LOGOUT)
+// RESPONSE INTERCEPTOR
 // ==========================
-instance.interceptors.response.use(
+API.interceptors.response.use(
   (response) => response,
   (error) => {
-    // 🔥 Auto logout if token expired / unauthorized
-    if (error.response && error.response.status === 401) {
+    if (error.response?.status === 401) {
       console.warn("Session expired. Logging out...");
 
       localStorage.removeItem("token");
-      localStorage.removeItem("userId");
+      localStorage.removeItem("user");
 
-      // redirect to login
       window.location.href = "/login";
     }
 
@@ -49,64 +51,59 @@ instance.interceptors.response.use(
   }
 );
 
-// ==========================
-// EXPORT INSTANCE
-// ==========================
-export const API = axios.create({
-  baseURL: "http://localhost:5000", // ✅ IMPORTANT
-});
-export default instance;
+export default API;
 
 // ==========================
-// 🔐 AUTH APIs
+// AUTH APIs
 // ==========================
 
 export async function postLogin(credentials) {
-  return instance.post("/auth/login", credentials);
+  return API.post("/auth/login", credentials);
 }
 
 export async function postRegister(data) {
-  return instance.post("/auth/register", data);
+  return API.post("/auth/register", data);
 }
 
-// ✅ NEW: Get current user profile
 export async function fetchCurrentUser() {
-  return instance.get("/auth/me");
+  return API.get("/auth/me");
 }
 
 // ==========================
-// 📁 FILE / REPORT APIs
+// FILE APIs
 // ==========================
 
 export async function uploadFile(formData) {
-  return instance.post("/files/upload", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-    timeout: 0, // allow large uploads
+  return API.post("/files/upload", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+    timeout: 0,
   });
 }
 
 export async function fetchHistory(userId) {
-  return instance.get(`/files/history/${userId}`);
+  return API.get(`/files/history/${userId}`);
 }
 
 export async function fetchSummary(userId) {
-  return instance.get(`/files/summary/${userId}`);
+  return API.get(`/files/summary/${userId}`);
 }
 
 export async function extractKpis(payload) {
-  return instance.post("/files/extract_kpi", payload, {
+  return API.post("/files/extract_kpi", payload, {
     timeout: 0,
   });
 }
 
 // ==========================
-// 🤖 AI FINANCIAL ANALYSIS APIs
+// AI APIs
 // ==========================
 
 export async function analyzeFinancialReport() {
-  return instance.get("/api/analyze");
+  return API.get("/api/analyze");
 }
 
 export async function fetchInsights(userId) {
-  return instance.get(`/api/insights/${userId}`);
+  return API.get(`/api/insights/${userId}`);
 }

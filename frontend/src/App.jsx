@@ -1,5 +1,9 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { useContext } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 
 /* ================= USER PAGES ================= */
 import Landing from "./pages/Landing";
@@ -8,8 +12,9 @@ import RegisterDark from "./pages/RegisterDark";
 import UploadPage from "./pages/UploadPage";
 import Dashboard from "./pages/Dashboard";
 import SummaryPage from "./pages/SummaryPage";
-import ProfilePage from "./pages/ProfilePage"; // ✅ NEW
+import ProfilePage from "./pages/ProfilePage";
 
+/* ================= COMPONENTS ================= */
 import Sidebar from "./components/Sidebar";
 
 /* ================= ADMIN PAGES ================= */
@@ -18,18 +23,13 @@ import AdminDashboard from "./admin/AdminDashboard";
 import AdminLayout from "./admin/AdminLayout";
 import AdminUsers from "./admin/AdminUsers";
 
-/* ================= CONTEXT ================= */
-import { AuthContext } from "./context/AuthContext";
-
 /* =================================================
-   USER PROTECTED ROUTE (UPDATED)
+   USER PROTECTED ROUTE
 ================================================= */
 const ProtectedUser = ({ children }) => {
-  const { isAuthenticated, loading } = useContext(AuthContext);
+  const token = localStorage.getItem("token");
 
-  if (loading) return <p>Loading...</p>;
-
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
+  return token ? children : <Navigate to="/login" replace />;
 };
 
 /* =================================================
@@ -37,17 +37,23 @@ const ProtectedUser = ({ children }) => {
 ================================================= */
 const ProtectedAdmin = ({ children }) => {
   const adminToken = localStorage.getItem("admin_token");
-  return adminToken ? children : <Navigate to="/admin/login" replace />;
+
+  return adminToken
+    ? children
+    : <Navigate to="/admin/login" replace />;
 };
 
 /* =================================================
-   USER LAYOUT (SIDEBAR WRAPPER) 🔥 CLEAN
+   USER LAYOUT
 ================================================= */
 const UserLayout = ({ children }) => {
   return (
     <div className="app-layout">
       <Sidebar />
-      <div className="app-content">{children}</div>
+
+      <div className="app-content">
+        {children}
+      </div>
     </div>
   );
 };
@@ -60,10 +66,19 @@ export default function App() {
     <Router>
       <Routes>
 
-        {/* ================= PUBLIC ================= */}
+        {/* ================= PUBLIC ROUTES ================= */}
+
         <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<LoginDark />} />
-        <Route path="/register" element={<RegisterDark />} />
+
+        <Route
+          path="/login"
+          element={<LoginDark />}
+        />
+
+        <Route
+          path="/register"
+          element={<RegisterDark />}
+        />
 
         {/* ================= USER ROUTES ================= */}
 
@@ -100,7 +115,6 @@ export default function App() {
           }
         />
 
-        {/* ✅ NEW PROFILE ROUTE */}
         <Route
           path="/profile"
           element={
@@ -112,25 +126,38 @@ export default function App() {
           }
         />
 
-        {/* ================= ADMIN ================= */}
+        {/* ================= ADMIN ROUTES ================= */}
 
-<Route path="/admin/login" element={<AdminLogin />} />
+        <Route
+          path="/admin/login"
+          element={<AdminLogin />}
+        />
 
-<Route
-  path="/admin"
-  element={
-    localStorage.getItem("adminToken") ? (
-      <AdminLayout />
-    ) : (
-      <AdminLogin />
-    )
-  }
->
-  <Route path="dashboard" element={<AdminDashboard />} />
-  <Route path="users" element={<AdminUsers />} />
-</Route>
+        <Route
+          path="/admin"
+          element={
+            <ProtectedAdmin>
+              <AdminLayout />
+            </ProtectedAdmin>
+          }
+        >
+          <Route
+            path="dashboard"
+            element={<AdminDashboard />}
+          />
+
+          <Route
+            path="users"
+            element={<AdminUsers />}
+          />
+        </Route>
+
         {/* ================= FALLBACK ================= */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+
+        <Route
+          path="*"
+          element={<Navigate to="/" replace />}
+        />
 
       </Routes>
     </Router>

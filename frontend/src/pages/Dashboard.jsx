@@ -3,13 +3,27 @@ import { motion, AnimatePresence } from "framer-motion";
 import Plot from "react-plotly.js";
 import { API } from "../services/api";
 import { KpiContext } from "../context/KpiContext";
+import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+
   const [records, setRecords] = useState([]);
   const [selectedKpi, setSelectedKpi] = useState(null);
 
   const { kpis, traces } = useContext(KpiContext) || {};
+
+  /* =========================
+     CHECK AUTH
+  ========================= */
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      navigate("/login");
+    }
+  }, [navigate]);
 
   /* =========================
      SAFE VALUE CHECK
@@ -31,15 +45,50 @@ export default function Dashboard() {
   useEffect(() => {
     async function fetchHistory() {
       try {
-        const res = await API.get("/files/history/1");
-        setRecords(Array.isArray(res.data.history) ? res.data.history : []);
+        const token = localStorage.getItem("token");
+        const storedUser = JSON.parse(localStorage.getItem("user"));
+
+        if (!token || !storedUser) {
+          navigate("/login");
+          return;
+        }
+
+        console.log("Logged User:", storedUser);
+
+        const res = await API.get(
+          `/files/history/${storedUser.id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        console.log("History Response:", res.data);
+
+        setRecords(
+          Array.isArray(res.data.history)
+            ? res.data.history
+            : []
+        );
       } catch (err) {
-        console.error("Error fetching history:", err);
+        console.error(
+          "Error fetching history:",
+          err.response?.data || err
+        );
+
+        if (err.response?.status === 401) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          navigate("/login");
+        }
+
         setRecords([]);
       }
     }
+
     fetchHistory();
-  }, []);
+  }, [navigate]);
 
   const latestRecord =
     records.length > 0 ? records[records.length - 1] : {};
@@ -51,20 +100,30 @@ export default function Dashboard() {
 
   const getLatestValue = (key) => {
     if (kpis && isValid(kpis[key])) return kpis[key];
-    if (latestRecord && isValid(latestRecord[key]))
+
+    if (latestRecord && isValid(latestRecord[key])) {
       return latestRecord[key];
+    }
+
     return null;
   };
 
   const getTraceForKpi = (kpiName) => {
     if (!Array.isArray(traces)) return [];
+
     return traces.filter((t) => t.kpi_name === kpiName);
   };
 
   /* =========================
      KPI LISTS
   ========================= */
-  const basicKPIs = ["revenue", "profit", "eps", "cash_flow"];
+  const basicKPIs = [
+    "revenue",
+    "profit",
+    "eps",
+    "cash_flow",
+  ];
+
   const advancedKPIs = [
     "ebitda",
     "ebit",
@@ -90,9 +149,11 @@ export default function Dashboard() {
      CHART DATA
   ========================= */
   const chartX = records.map((r) => r.upload_date || "");
+
   const chartRevenue = records.map((r) =>
     isValid(r.revenue) ? r.revenue : 0
   );
+
   const chartProfit = records.map((r) =>
     isValid(r.profit) ? r.profit : 0
   );
@@ -109,6 +170,7 @@ export default function Dashboard() {
 
       {/* ================= BASIC KPIs ================= */}
       <h3 className="section-title">Basic KPIs</h3>
+
       <div className="dashboard-kpi-grid">
         {basicKPIs
           .filter((k) => isValid(getLatestValue(k)))
@@ -121,13 +183,13 @@ export default function Dashboard() {
             >
               <h4>{k.toUpperCase()}</h4>
               <p>{formatValue(getLatestValue(k))}</p>
-              <small className="trace-hint"></small>
             </motion.div>
           ))}
       </div>
 
       {/* ================= ADVANCED KPIs ================= */}
       <h3 className="section-title">Advanced KPIs</h3>
+
       <div className="dashboard-kpi-grid">
         {advancedKPIs
           .filter((k) => isValid(getLatestValue(k)))
@@ -140,7 +202,6 @@ export default function Dashboard() {
             >
               <h4>{k.toUpperCase()}</h4>
               <p>{formatValue(getLatestValue(k))}</p>
-              <small className="trace-hint"></small>
             </motion.div>
           ))}
       </div>
@@ -171,9 +232,6 @@ export default function Dashboard() {
                 >
                   <h4>{k.toUpperCase()}</h4>
                   <p>{formatValue(getLatestValue(k))}</p>
-                  <small className="trace-hint">
-                    
-                  </small>
                 </motion.div>
               ))}
             </div>
@@ -181,8 +239,10 @@ export default function Dashboard() {
         );
       })}
 
-      {/* ================= MODERN CHART ================= */}
-      <h3 className="section-title">Revenue & Profit Trend</h3>
+      {/* ================= CHART ================= */}
+      <h3 className="section-title">
+        Revenue & Profit Trend
+      </h3>
 
       {records.length > 0 ? (
         <Plot
@@ -196,10 +256,10 @@ export default function Dashboard() {
               line: {
                 color: "#6366f1",
                 width: 3,
-                shape: "spline", // smooth curve 🔥
+                shape: "spline",
               },
               fill: "tozeroy",
-              fillcolor: "rgba(99,102,241,0.15)", // gradient feel
+              fillcolor: "rgba(99,102,241,0.15)",
             },
             {
               x: chartX,
@@ -217,16 +277,26 @@ export default function Dashboard() {
           layout={{
             paper_bgcolor: "#ffffff",
             plot_bgcolor: "#ffffff",
-            margin: { l: 40, r: 20, t: 20, b: 40 },
+
+            margin: {
+              l: 40,
+              r: 20,
+              t: 20,
+              b: 40,
+            },
 
             xaxis: {
               showgrid: false,
-              tickfont: { color: "#6b7280" },
+              tickfont: {
+                color: "#6b7280",
+              },
             },
 
             yaxis: {
               gridcolor: "#f1f5f9",
-              tickfont: { color: "#6b7280" },
+              tickfont: {
+                color: "#6b7280",
+              },
             },
 
             legend: {
@@ -234,9 +304,11 @@ export default function Dashboard() {
               y: 1.1,
             },
 
-            hovermode: "x unified", // 🔥 better tooltip
+            hovermode: "x unified",
           }}
-          config={{ displayModeBar: false }}
+          config={{
+            displayModeBar: false,
+          }}
           style={{
             width: "100%",
             height: "420px",
@@ -244,7 +316,9 @@ export default function Dashboard() {
           }}
         />
       ) : (
-        <p className="muted-text">No data available for charts.</p>
+        <p className="muted-text">
+          No data available for charts.
+        </p>
       )}
 
       {/* ================= TRACE MODAL ================= */}
@@ -264,25 +338,39 @@ export default function Dashboard() {
               exit={{ y: 40 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <h3>🔍 Traceability: {selectedKpi.toUpperCase()}</h3>
+              <h3>
+                🔍 Traceability:{" "}
+                {selectedKpi.toUpperCase()}
+              </h3>
 
               {getTraceForKpi(selectedKpi).length === 0 ? (
                 <p>No source info available.</p>
               ) : (
                 getTraceForKpi(selectedKpi).map((t, i) => (
                   <div key={i} className="trace-card">
-                    <p><strong>Source:</strong> {t.source_type}</p>
-                    <p><strong>Page:</strong> {t.page_number}</p>
+                    <p>
+                      <strong>Source:</strong>{" "}
+                      {t.source_type}
+                    </p>
+
+                    <p>
+                      <strong>Page:</strong>{" "}
+                      {t.page_number}
+                    </p>
+
                     <p>
                       <strong>Confidence:</strong>{" "}
                       {(t.confidence * 100).toFixed(1)}%
                     </p>
+
                     <p>"{t.matched_text}"</p>
                   </div>
                 ))
               )}
 
-              <button onClick={() => setSelectedKpi(null)}>
+              <button
+                onClick={() => setSelectedKpi(null)}
+              >
                 Close
               </button>
             </motion.div>
