@@ -130,6 +130,11 @@ FinScope-AI/
 │   ├── database.py
 │   ├── app.py
 │   └── requirements.txt
+├── screenshots/
+│   ├── landing-page.png
+│   ├── upload-page.png
+│   ├── dashboard.png
+│   └── trend-analysis.png
 │
 └── README.md
 ```
@@ -273,6 +278,24 @@ http://localhost:3000
 - Protected API Endpoints
 - Secure User Sessions
 - Route Protection
+
+---
+## Screenshots
+
+### Landing Page
+![Landing Page](screenshots/landing-page.png)
+
+### PDF Upload Page
+Upload and process annual financial reports.
+![Upload Page](screenshots/upload-page.png)
+
+### KPI Dashboard
+Interactive dashboard displaying extracted financial metrics.
+![Dashboard](screenshots/dashboard.png)
+
+### Financial Trend Analysis
+Revenue and profit trend visualization with interactive charts.
+![Trend Analysis](screenshots/trend-analysis.png)
 
 ---
 
