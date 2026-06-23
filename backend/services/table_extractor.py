@@ -1,39 +1,36 @@
-import pdfplumber
 import re
+from utils.text_cleaner import clean_text
 
-def extract_from_tables(pdf_path):
+KPI_MAP = {
+    "revenue": ["revenue", "total revenue"],
+    "profit": ["profit", "net profit", "pbt"],
+    "total_expense": ["expense", "total expense"],
+}
+
+def extract_value_near_keyword(text, keyword):
+    words = text.split()
+
+    for i, word in enumerate(words):
+        if keyword in word.lower():
+            window = words[i:i+6]
+
+            for w in window:
+                match = re.search(r"\d+\.?\d*", w)
+                if match:
+                    return float(match.group())
+
+    return None
+
+
+def extract_from_text(text):
+    text = clean_text(text)
     results = {}
 
-    with pdfplumber.open(pdf_path) as pdf:
-        for page in pdf.pages:
-            tables = page.extract_tables()
+    for kpi, keywords in KPI_MAP.items():
+        for keyword in keywords:
+            val = extract_value_near_keyword(text, keyword)
+            if val:
+                results[kpi] = val
+                break
 
-            for table in tables:
-                for row in table:
-                    row_text = " ".join([str(c) for c in row if c])
-
-                    if not row_text:
-                        continue
-
-                    text = row_text.lower()
-
-                    nums = re.findall(r"\d+\.?\d*", row_text)
-
-                    if not nums:
-                        continue
-
-                    value = float(nums[-1])  # usually last is correct
-
-                    if "revenue" in text:
-                        results["revenue"] = value
-
-                    elif "profit before tax" in text or "pbt" in text:
-                        results["pbt"] = value
-
-                    elif "expense" in text:
-                        results["total_expense"] = value
-
-                    elif "cash flow" in text:
-                        results["cash_flow"] = value
-
-    return results
+    return resultss
